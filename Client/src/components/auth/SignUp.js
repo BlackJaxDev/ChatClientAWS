@@ -6,13 +6,16 @@ import firebase from 'firebase/app';
 import 'firebase/auth';
 import { Link } from 'react-router-dom';
 import authMessages from './authMessages.json';
+import axios from "axios";
 
-class SignIn extends React.Component 
+class SignUp extends React.Component 
 {
   state = 
   {
     email: '',
     password: '',
+    photoURL: '',
+    displayName: '',
     message: null,
   }
 
@@ -25,21 +28,38 @@ class SignIn extends React.Component
   {
     this.setState({ [event.target.name]: e.target.value })
   }
-  handleSignIn = (event) =>
+  handleSignUp = (event) =>
   {
     event.preventDefault();
     this.props.firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION)
     .then(() =>
     {
-      this.props.firebase.auth().signInWithEmailAndPassword(this.state.email, this.state.password).then(() =>
+      this.props.firebase.auth().createUserWithEmailAndPassword(this.state.email, this.state.password)
+      .then((user) => 
       {
-        console.log("Signed in successfully.");
-      })
-      .catch((error) =>
+        if (user)
+        {
+          axios.post('/api/create/user/' + user.uid)
+          .then((response) =>
+          {
+            console.log(response);
+          })
+          .catch((error) =>
+          {
+            console.log(error);
+          });
+          user.updateProfile(
+          {
+            displayName: this.state.displayName,
+            photoURL: this.state.photoURL
+          });
+        }
+        this.props.history.push("/");
+      }).catch((error) =>
       {
         var errorCode = error.code;
-        var msg = errorCode + ': ' +  error.message;
-        Object.keys(authMessages).forEach(function(code) {
+        var msg = errorCode + ': ' + error.message;
+        Object.keys(authMessages).forEach((code) => {
           if (code === errorCode)
             msg = authMessages[code];
         });
@@ -52,16 +72,18 @@ class SignIn extends React.Component
   {
     return (
       <div className="component-sign-in">
-        <Segment inverted placeholder>
+      <Segment inverted placeholder>
           <Grid>
             <Grid.Row centered>
               <Grid.Column width={6} verticalAlign='middle'>
-                <Form inverted onSubmit={this.handleSignIn}>
+                <Form inverted onSubmit={this.handleSignUp}>
                   <Form.Input icon='mail outline' iconPosition='left' name="email" label='Email' onChange={this.handleTextChange} />
                   <Form.Input icon='lock' iconPosition='left' name="password" label='Password' type='password' onChange={this.handleTextChange}  />
-                  <Button content='Log In' type="submit" primary />
+                  <Form.Input icon='user circle' iconPosition='left' name="displayName" label='Username' onChange={this.handleTextChange} />
+                  <Form.Input icon='picture' iconPosition='left' name="photoURL" label='Avatar URL' onChange={this.handleTextChange}  />
+                  <Button content='Create Account' type="submit" primary />
                 </Form>
-                Or <Link to='/signup'>sign up</Link>
+                Or <Link to='/signin'>sign in</Link>
                 {this.state.message != null && 
                 <React.Fragment>
                   <Message warning>
@@ -77,4 +99,4 @@ class SignIn extends React.Component
     );
   }
 }
-export default SignIn;
+export default SignUp;
