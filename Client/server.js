@@ -8,14 +8,26 @@ var bodyParser = require('body-parser');
 var url = require('url');
 var admin = require('firebase-admin');
 var cors = require('cors');
+var webpack = require('webpack');
+var webpackMiddleware = require('webpack-dev-middleware');
+var webpackHotMiddleware = require("webpack-hot-middleware");
+var webpackConfig = require('./webpack.dev.config');
 
 var app = express();
 app.use(cors());
 
+const webpackCompiler = webpack(webpackConfig);
+
+const wpmw = webpackMiddleware(webpackCompiler, { });
+app.use(wpmw);
+
+const wphmw = webpackHotMiddleware(webpackCompiler);
+app.use(wphmw);
+
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
-var port = process.env.PORT || 3001;
+var port = 3000;
 app.set('port', port);
 
 app.use(bodyParser.json());
@@ -129,8 +141,8 @@ db.on('error', () =>
 db.once('open', () =>
 {
     console.log("Connected to MongoDB successfully.");
-    var server = http.listen(port, () => 
-    {
-        console.log('Server is running on port', server.address().port);
-    });
+});
+var server = http.listen(port, () => 
+{
+    console.log('Server is running on port', server.address().port);
 });
